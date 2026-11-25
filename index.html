@@ -1,0 +1,1445 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>上手 · 先上手，再掏钱</title>
+<meta name="description" content="传一张手照和一张你收藏的美甲图，1 分钟内看到它做在你本人手上的样子。你的肤色、你的甲型、你的手指长度。首张免费。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="上手 · 先上手，再掏钱">
+<meta property="og:description" content="传一张手照、选一个款，1 分钟看到它做在你自己手上的样子。第一张免费，不满意免费重出。">
+<meta property="og:image" content="assets/hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Product","name":"上手 · 美甲试甲预演","description":"上传手照与喜欢的款式，AI 生成该款式在你手上的效果，用于到店前的决策。","brand":{"@type":"Brand","name":"上手"},"offers":{"@type":"Offer","price":"9.9","priceCurrency":"CNY","availability":"https://schema.org/InStock"}}
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23F7F3EE'/%3E%3Cpath d='M32 10c10 0 14 12 14 24s-6 20-14 20-14-8-14-20S22 10 32 10z' fill='%237B2D3B'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<script>
+/* 演示壳：没有后端，所有接口在浏览器本地模拟；结果图用款式图占位，不调真实出图。 */
+(function(){
+  const DEMO = { orders: {}, seq: 1 };
+  const pad = n => String(n).padStart(2,'0');
+  const styleImg = id => id ? ('assets/styles/style-' + pad(id) + '.jpg') : 'assets/sample-hand.jpg';
+  function resultsFor(body){
+    const base = body.styleId || 2;
+    if (body.plan === 'hd') {
+      const set = [...new Set([base, base % 12 + 1, (base + 3) % 12 + 1])].slice(0, 3);
+      return set.map(i => ({ url: styleImg(i), name: '' }));
+    }
+    return [{ url: styleImg(body.styleId), name: '' }];
+  }
+  function makeOrder(body){
+    const id = 'DEMO-' + String(1000 + DEMO.seq++);
+    const o = { id, plan: body.plan || 'free', styleId: body.styleId || null, styleName: '', paid: false, status: body.plan === 'hd' ? 'pending_pay' : 'delivered', result: null, results: [], contact: body.contact || '' };
+    if (o.status === 'delivered') { o.results = resultsFor(body); o.result = o.results[0].url; }
+    DEMO.orders[id] = o;
+    return o;
+  }
+  function json(payload, status){
+    return new Response(JSON.stringify(payload), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
+  }
+  const orig = window.fetch.bind(window);
+  window.fetch = async (url, opts) => {
+    const u = String(url);
+    let body = {};
+    try { body = opts && opts.body ? JSON.parse(opts.body) : {}; } catch(e){}
+    if (u === '/api/order' && opts && opts.method === 'POST') {
+      const o = makeOrder(body);
+      return json({ ok: true, id: o.id, auto: true, payNeeded: o.plan === 'hd' });
+    }
+    const m = /\/api\/order\/([A-Za-z0-9\-]+)/.exec(u);
+    if (m) {
+      const o = DEMO.orders[m[1]];
+      if (!o) return json({ error: '订单不存在' }, 404);
+      if (/\/pay$/.test(u)) {
+        o.paid = true; o.status = 'generating';
+        setTimeout(() => { o.status = 'delivered'; o.results = resultsFor({ plan: o.plan, styleId: o.styleId }); o.result = o.results[0].url; }, 800);
+        return json({ ok: true });
+      }
+      if (/\/feedback$/.test(u)) return json({ ok: true });
+      return json(o);
+    }
+    if (u.indexOf('/api/invite/status') >= 0) return json({ bonus: 0 });
+    if (u.indexOf('/api/invite/claim') >= 0) return json({ ok: false, reason: 'demo' });
+    return orig(url, opts);
+  };
+})();
+</script>
+<style>
+:root{
+  --paper:#F7F3EE; --paper-2:#FBF9F6; --ink:#1A1614; --muted:#7A6E62;
+  --line:#E3D9CC; --accent:#7B2D3B; --gold:#A8792F;
+  --serif:"Noto Serif SC","Songti SC",Songti,serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-weight:400;line-height:1.75;letter-spacing:.01em;
+  -webkit-font-smoothing:antialiased;
+}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+  background-image:radial-gradient(rgba(120,100,80,.14) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+.narrow{max-width:760px;margin:0 auto}
+
+/* ---------- 顶栏 ---------- */
+header{position:sticky;top:0;z-index:30;background:rgba(247,243,238,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:62px}
+.brand{display:flex;align-items:baseline;gap:10px;font-family:var(--serif);font-weight:700;font-size:19px;letter-spacing:.12em}
+.brand em{font-style:normal;font-family:var(--sans);font-weight:300;font-size:11px;letter-spacing:.22em;color:var(--muted)}
+.nav a.cta{font-size:13px;text-decoration:none;border:1px solid var(--ink);padding:7px 15px;border-radius:2px;transition:.2s}
+.nav a.cta:hover{background:var(--ink);color:var(--paper)}
+
+/* ---------- 首屏 ---------- */
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,52px);align-items:start;padding:52px 0 46px}
+.eyebrow{font-size:11px;letter-spacing:.26em;color:var(--accent);margin:0 0 18px;font-weight:500}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(38px,6vw,68px);line-height:1.08;margin:0 0 22px;letter-spacing:-.01em}
+h1 span{display:block}
+h1 .light{color:var(--muted);font-weight:400}
+.lede{font-size:15.5px;color:#3D3630;max-width:30em;margin:0 0 30px}
+.lede b{font-weight:500;border-bottom:1px solid rgba(123,45,59,.35);padding-bottom:1px}
+.act{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:9px;border:none;cursor:pointer;font-family:inherit;
+  background:var(--accent);color:#fff;font-size:15px;font-weight:500;padding:14px 26px;border-radius:2px;
+  transition:transform .15s,box-shadow .2s;box-shadow:0 6px 18px rgba(123,45,59,.18);text-decoration:none;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 9px 26px rgba(123,45,59,.24)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:400}
+.btn.ghost:hover{border-color:var(--ink)}
+.fine{font-size:12px;color:var(--muted);margin-top:16px;letter-spacing:.02em}
+.hero-fig{position:relative}
+.hero-fig img{width:100%;height:clamp(340px,56vw,560px);object-fit:cover;object-position:50% 38%;border-radius:3px}
+.hero-fig figcaption{
+  position:absolute;left:-14px;bottom:24px;background:var(--paper-2);border:1px solid var(--line);
+  padding:12px 16px;font-size:12.5px;line-height:1.6;max-width:250px;color:#3D3630;box-shadow:6px 6px 0 rgba(227,217,204,.6)
+}
+.hero-fig figcaption b{font-family:var(--serif);color:var(--accent)}
+
+/* ---------- 断裂带 ---------- */
+.break{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px 0;background:var(--paper-2)}
+.break-in{display:flex;gap:14px;align-items:flex-start;max-width:900px}
+.break-in p{margin:0;font-family:var(--serif);font-size:clamp(17px,2.4vw,21px);line-height:1.7;color:#332C27}
+.quote-mark{font-family:var(--serif);font-size:44px;line-height:1;color:var(--accent);opacity:.5;flex:0 0 auto}
+
+/* ---------- 通用小节 ---------- */
+section.block{padding:72px 0}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:34px;border-bottom:1px solid var(--line);padding-bottom:14px}
+.sec-head h2{font-family:var(--serif);font-size:clamp(24px,3.2vw,31px);margin:0;font-weight:700;letter-spacing:.01em}
+.sec-head small{font-size:11px;letter-spacing:.2em;color:var(--muted)}
+
+/* 三痛点 */
+.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
+.pain{padding:28px 24px 30px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pain:last-child{border-right:none}
+.pain .tagline{font-family:var(--serif);font-size:26px;color:var(--accent);margin:0 0 10px;font-weight:700}
+.pain p{margin:0;font-size:14px;color:#3D3630}
+.pain .num{font-size:11px;letter-spacing:.18em;color:var(--muted);display:block;margin-bottom:12px}
+
+/* 流程 */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
+.step .n{font-family:var(--serif);font-size:44px;line-height:1;color:var(--accent);opacity:.42;font-weight:900}
+.step h3{font-family:var(--serif);font-size:19px;margin:14px 0 8px;font-weight:700}
+.step p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.8}
+.step .rule{height:1px;background:var(--line);margin:16px 0}
+
+/* ---------- 下单 ---------- */
+.order-shell{background:var(--paper-2);border:1px solid var(--line);padding:clamp(20px,4vw,44px);position:relative}
+.order-shell::before{content:"";position:absolute;inset:8px;border:1px solid rgba(227,217,204,.7);pointer-events:none}
+.field{margin-bottom:34px;position:relative;z-index:1}
+.field-h{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.field-h .idx{font-family:var(--serif);font-size:13px;color:var(--accent);letter-spacing:.14em;border:1px solid rgba(123,45,59,.3);padding:2px 8px}
+.field-h h3{font-family:var(--serif);font-size:18px;margin:0;font-weight:600}
+.field-h .hint{font-size:12px;color:var(--muted);margin-left:auto}
+
+.drop{
+  border:1px dashed #C9BCAA;background:#fff;padding:26px 20px;text-align:center;cursor:pointer;
+  transition:.2s;min-height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px
+}
+.drop:hover{border-color:var(--accent);background:#FFFCFA}
+.drop .big{font-size:15px;font-weight:500}
+.drop .sm{font-size:12px;color:var(--muted)}
+.drop.has{padding:0;border-style:solid;border-color:var(--line);min-height:0;background:#F2EAE0}
+.drop.has img{width:100%;max-height:340px;object-fit:contain;background:#F2EAE0;display:block}
+.drop .again{font-size:12px;color:var(--muted);margin-top:8px}
+.thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:14px}
+.thumb{border:1px solid var(--line);background:#fff;padding:0;cursor:pointer;border-radius:2px;overflow:hidden;position:relative;transition:.18s;text-align:left}
+.thumb img{width:100%;aspect-ratio:1;object-fit:cover}
+.thumb .cap{padding:7px 8px 8px;font-size:11.5px;line-height:1.35}
+.thumb .cap b{display:block;font-weight:500;font-size:12.5px;margin-bottom:2px}
+.thumb .dots{display:inline-flex;gap:2px;margin-top:3px}
+.thumb .dots i{width:4px;height:4px;border-radius:50%;background:#DCD2C5;display:block}
+.thumb .dots i.on{background:var(--accent)}
+.thumb:hover{border-color:#B8A894;transform:translateY(-1px)}
+.thumb.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(123,45,59,.12)}
+.thumb.sel::after{content:"";position:absolute;top:0;right:0;border:16px solid transparent;border-top-color:var(--accent);border-right-color:var(--accent)}
+.tipbar{margin-top:12px;font-size:12.5px;color:#3D3630;background:#fff;border-left:2px solid var(--accent);padding:9px 13px;display:none}
+.tipbar.on{display:block}
+.tipbar b{color:var(--accent);font-weight:500}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+input[type=text],input[type=email],select,textarea{
+  width:100%;font-family:inherit;font-size:14px;padding:11px 13px;border:1px solid var(--line);background:#fff;border-radius:2px;color:var(--ink)
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:64px}
+label.lbl{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+.handcard{border:1px solid var(--line);background:#FFFCFA;padding:15px 16px;margin-bottom:18px}
+.hc-empty{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.hc-empty b{font-family:var(--serif);font-size:15px;color:#1A1614;display:block;margin-bottom:3px}
+.hc-sub{font-size:12px;color:#7A6E62;line-height:1.7;display:block;max-width:34em}
+.hc-btn{display:inline-block;font-size:13px;padding:9px 16px;border:1px solid var(--accent);color:var(--accent);background:#fff;text-decoration:none;white-space:nowrap;transition:.16s}
+.hc-btn:hover{background:var(--accent);color:#fff}
+.hc-btn.ghost{border-color:var(--line);color:#7A6E62}
+.hc-btn.ghost:hover{background:#fff;color:var(--accent);border-color:var(--accent)}
+.hc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.hc-chip{font-size:12px;color:#3A332D;background:#fff;border:1px solid var(--line);padding:4px 9px}
+.hc-chip i{font-style:normal;color:#7A6E62;margin-right:5px}
+.hc-recs{font-size:12px;color:#7A6E62;margin-bottom:10px}
+.hc-recs button{font-family:inherit;font-size:12.5px;padding:5px 11px;margin-right:8px;border:1px solid var(--line);background:#fff;color:var(--accent);cursor:pointer}
+.hc-recs button em{font-style:normal;font-size:10.5px;color:#7A6E62;margin-left:5px}
+.hc-recs button:hover{border-color:var(--accent)}
+.hc-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hc-x{font-family:inherit;font-size:11.5px;color:#7A6E62;background:none;border:none;cursor:pointer;text-decoration:underline}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.plan{border:1px solid var(--line);background:#fff;padding:16px 16px 14px;cursor:pointer;position:relative;transition:.18s}
+.plan.sel{border-color:var(--accent);background:#FFFCFA}
+.plan h4{margin:0 0 6px;font-family:var(--serif);font-size:16px;font-weight:700}
+.plan .p{font-family:var(--serif);font-size:22px;color:var(--accent);font-weight:700;line-height:1.2}
+.plan .p small{font-size:12px;font-family:var(--sans);font-weight:400;color:var(--muted);margin-left:4px}
+.plan ul{margin:8px 0 0;padding-left:15px;font-size:12px;color:#4A423B;line-height:1.7}
+.plan .badge{position:absolute;top:-9px;right:10px;background:var(--accent);color:#fff;font-size:10px;letter-spacing:.1em;padding:2px 7px}
+.submit-row{margin-top:26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.submit-row .note{font-size:12px;color:var(--muted);line-height:1.6}
+.err{color:#9B2C2C;font-size:13px;margin-top:10px;display:none}
+.err.on{display:block}
+
+/* 订单面板 */
+.panel{display:none;background:#fff;border:1px solid var(--line);padding:clamp(18px,3.4vw,32px);margin-top:26px}
+.panel.on{display:block}
+.panel-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:18px;flex-wrap:wrap}
+.panel-top h3{font-family:var(--serif);font-size:20px;margin:0}
+.oid{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.state{display:flex;gap:10px;align-items:center;font-size:13.5px;color:#3D3630}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pl 1.6s infinite}
+@keyframes pl{0%,100%{opacity:.35}50%{opacity:1}}
+.result-img{width:100%;border:1px solid var(--line);margin:14px 0 12px}
+.result-grid{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0 12px}
+.result-grid.multi{grid-template-columns:repeat(3,1fr)}
+.result-grid figure{margin:0}
+.result-grid img{width:100%;display:block;border:1px solid var(--line)}
+.result-grid figcaption{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.02em;text-align:center}
+.result-actions{display:flex;gap:10px;flex-wrap:wrap}
+.small-btn{font-size:12.5px;padding:9px 15px;border:1px solid var(--line);background:#fff;border-radius:2px;cursor:pointer;text-decoration:none;color:var(--ink);display:inline-flex;align-items:center;gap:7px;font-family:inherit}
+.small-btn:hover{border-color:var(--ink)}
+.paybox{display:grid;grid-template-columns:200px 1fr;gap:22px;align-items:start;margin-top:16px;border-top:1px dashed var(--line);padding-top:18px}
+.qrph{width:200px;height:216px;border:1px dashed #C9BCAA;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;line-height:1.7;color:var(--muted);padding:8px;background:#FBF7F2;word-break:break-word}
+.qrph img{width:100%;height:100%;object-fit:contain;background:#fff}
+.payright p{margin:0 0 10px;font-size:13px;color:#3D3630}
+.payright .price{font-family:var(--serif);font-size:26px;color:var(--accent);font-weight:700;line-height:1.2;margin-bottom:8px}
+.talk{margin-top:16px;background:#FBF7F2;border:1px solid var(--line);padding:14px 16px;font-size:12.5px;line-height:1.8;color:#3D3630;white-space:pre-wrap;display:none}
+.talk.on{display:block}
+.talk b{color:var(--accent);font-family:var(--serif);display:block;margin-bottom:6px;font-size:13px}
+
+/* FAQ */
+.faq{border-top:1px solid var(--line)}
+.qa{border-bottom:1px solid var(--line);padding:22px 0}
+.qa h4{margin:0 0 8px;font-family:var(--serif);font-size:16.5px;font-weight:600}
+.qa p{margin:0;font-size:13.5px;color:#4A423B;line-height:1.85}
+
+/* 店铺版 */
+.shop{background:var(--ink);color:#F3EDE4;padding:clamp(34px,5vw,62px) clamp(24px,5vw,54px);display:grid;grid-template-columns:1.4fr 1fr;gap:36px;align-items:center}
+.shop h2{font-family:var(--serif);font-size:clamp(24px,3.4vw,32px);margin:0 0 14px;font-weight:700;color:#fff}
+.shop p{margin:0 0 10px;font-size:14px;color:#CFC5B8;line-height:1.85}
+.shop .price{font-family:var(--serif);font-size:34px;color:#E8C79A;font-weight:700;margin:10px 0 4px}
+.shop .price small{font-size:13px;font-family:var(--sans);color:#CFC5B8;font-weight:400}
+.shop .btn{background:#fff;color:var(--ink);box-shadow:none}
+.shop .btn:hover{background:#E8C79A}
+footer{padding:46px 0 60px;font-size:12px;color:var(--muted);line-height:1.9}
+footer .line{border-top:1px solid var(--line);padding-top:20px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}
+
+/* ---------- 内置浏览器提示条 ---------- */
+.wvbar{position:sticky;top:0;z-index:90;background:#F8EBCB;border-bottom:1px solid #E4CE99;color:#4B3A17;font-size:12.5px;line-height:1.65;padding:10px 40px 10px 16px}
+.wvbar b{font-weight:600}
+.wvbar .x{position:absolute;right:12px;top:8px;background:none;border:none;font-size:18px;line-height:1;color:#7A6136;cursor:pointer;font-family:inherit}
+
+/* ---------- 首屏上传卡 ---------- */
+.upload-card{background:#fff;border:1px solid var(--line);padding:clamp(16px,2.4vw,24px);box-shadow:10px 10px 0 rgba(227,217,204,.45);align-self:start}
+.uc-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.uc-head .idx{font-family:var(--serif);font-size:12px;color:var(--accent);letter-spacing:.14em;border:1px solid rgba(123,45,59,.3);padding:1px 7px}
+.uc-head b{font-family:var(--serif);font-size:17px;font-weight:600}
+.uc-tag{margin-left:auto;font-size:10.5px;color:#fff;background:var(--accent);padding:2px 8px;letter-spacing:.08em}
+.upload-card .drop{min-height:118px;padding:20px 16px}
+.privacy{margin:12px 0 0;padding:0;list-style:none;font-size:12px;color:#5E544B;line-height:1.75}
+.privacy li{padding-left:13px;position:relative}
+.privacy li::before{content:"·";position:absolute;left:2px;top:0;color:var(--accent)}
+.freebar{margin-top:13px;font-size:12.5px;color:#3D3630;background:#FFFBF2;border:1px solid #EFE0BE;padding:8px 11px;line-height:1.6}
+.freebar b{color:var(--accent);font-family:var(--serif);font-size:16px;padding:0 2px}
+.freebar .off{color:var(--muted)}
+.btn.block{display:flex;width:100%;justify-content:center;text-align:center;margin-top:13px}
+.uc-note{font-size:11.5px;color:var(--muted);margin:9px 0 0;line-height:1.6}
+.hero-band{margin:0 0 0;position:relative}
+.hero-band img{width:100%;height:clamp(150px,22vw,250px);object-fit:cover;object-position:50% 38%;display:block}
+.hero-band figcaption{position:absolute;left:16px;bottom:14px;background:var(--paper-2);border:1px solid var(--line);padding:8px 13px;font-size:12px;line-height:1.6;max-width:min(320px,84vw);color:#3D3630;box-shadow:5px 5px 0 rgba(227,217,204,.65)}
+.hero-band figcaption b{font-family:var(--serif);color:var(--accent)}
+
+/* ---------- 下单：手照已就位 ---------- */
+.handrow{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);padding:10px 12px;font-size:13px;color:#3D3630;flex-wrap:wrap}
+.handrow img{width:52px;height:52px;object-fit:cover;border:1px solid var(--line);flex:0 0 auto}
+.handrow .ok{color:var(--accent);font-weight:500}
+.handrow button{margin-left:auto;background:none;border:1px solid var(--line);font-size:12px;padding:5px 11px;cursor:pointer;font-family:inherit;color:var(--muted)}
+.handrow button:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ---------- 结果页收银台 ---------- */
+.again{margin-top:16px;border:1px solid var(--accent);background:#FFFCFA;padding:16px 18px}
+.again b{font-family:var(--serif);font-size:16.5px;display:block;margin-bottom:5px}
+.again p{margin:0 0 12px;font-size:12.5px;color:#4A423B;line-height:1.7}
+.again .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.again .row .btn{padding:11px 20px}
+.again .row .price9{background:#fff;color:var(--accent);font-size:13px;padding:2px 8px;border-radius:2px;margin-left:10px;font-family:var(--serif);font-weight:700;line-height:1.4}
+
+/* ---------- 反馈 ---------- */
+.fb{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.fb .q{font-family:var(--serif);font-size:15px;margin:0 0 10px;color:#332C27}
+.fb .btns{display:flex;gap:8px}
+.fb button{font-family:inherit;font-size:12.5px;padding:6px 15px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+.fb button.on{border-color:var(--accent);color:var(--accent);background:#FFFCFA}
+.fb-reasons{display:none;margin-top:11px}
+.fb-reasons.on{display:block}
+.fb-reasons .lbl2{font-size:12px;color:var(--muted);margin:0 0 2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0 10px}
+.chip{font-size:12px;padding:5px 11px;border:1px solid var(--line);background:#fff;cursor:pointer;border-radius:2px}
+.chip.on{border-color:var(--accent);color:var(--accent);background:#FFFCFA}
+.fb-thanks{font-size:12.5px;color:var(--accent);display:none}
+.fb-thanks.on{display:block}
+
+/* ---------- 我的试甲记录 ---------- */
+.nav .mine-btn{background:none;border:none;font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;letter-spacing:.04em;padding:6px 2px}
+.nav .mine-btn:hover{color:var(--accent)}
+.sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:80;background:#fff;border-top:1px solid var(--line);padding:16px 18px 26px;max-height:72vh;overflow:auto;box-shadow:0 -8px 30px rgba(26,22,20,.14)}
+.sheet.on{display:block}
+.sheet .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.sheet .hd b{font-family:var(--serif);font-size:16px}
+.sheet .hd button{background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);font-family:inherit}
+.sheet .empty{font-size:12.5px;color:var(--muted);padding:14px 0}
+.mitem{display:flex;gap:11px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:12.5px}
+.mitem img{width:46px;height:46px;object-fit:cover;border:1px solid var(--line);flex:0 0 auto;background:#F2EAE0}
+.mitem .t{flex:1;color:#4A423B;line-height:1.5}
+.mitem .t em{display:block;font-style:normal;color:var(--muted);font-size:11px}
+.mitem a{font-size:12px;color:var(--accent);text-decoration:none;white-space:nowrap}
+
+/* ---------- 邀请 / 扫码 / 分享 ---------- */
+.invite{margin-top:16px;border:1px solid var(--line);background:#fff;padding:14px 16px}
+.invite b{font-family:var(--serif);font-size:15px;display:block;margin-bottom:4px}
+.invite p{margin:0 0 10px;font-size:12.5px;color:#4A423B;line-height:1.7}
+.invite .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.invite .code{font-size:12.5px;letter-spacing:.16em;background:#FFFBF2;border:1px dashed #E4CE99;padding:6px 10px;color:#7A5A1F}
+.qrbtn{margin-top:10px;background:none;border:1px solid var(--line);font-family:inherit;font-size:12px;padding:6px 12px;cursor:pointer;color:var(--muted)}
+.qrbtn:hover{border-color:var(--accent);color:var(--accent)}
+.qrwrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.qrbox{width:190px;height:190px;background:#fff;border:1px solid var(--line);padding:8px}
+.qrbox svg{width:100%;height:100%;display:block}
+.qrinfo{flex:1;min-width:200px;font-size:12.5px;color:#4A423B;line-height:1.8}
+.qrinfo b{font-family:var(--serif);font-size:15px;display:block;margin-bottom:6px}
+.qrlink{font-size:11.5px;color:var(--muted);word-break:break-all;margin:8px 0 0}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:#fff;font-size:13px;padding:10px 18px;border-radius:2px;z-index:95;opacity:0;transition:.25s;pointer-events:none;max-width:86vw;text-align:center;line-height:1.6}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+footer a.footlink{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(123,45,59,.3)}
+
+/* 手型分析的轻声结果 */
+.fitbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.fitnote{font-size:11.5px;color:var(--muted)}
+.fitres{margin-top:12px;border:1px solid var(--line);background:#FBF7F2;padding:12px 14px}
+.fit-chips{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#3D3630}
+.fit-chips i{font-style:normal;color:var(--muted);margin-right:5px}
+.fit-say{margin:9px 0 0;font-size:12.5px;line-height:1.85;color:#3D3630}
+.fit-pick{margin:9px 0 0;font-size:12.5px;color:#3D3630}
+.fit-pick button{font:inherit;font-size:12px;padding:4px 10px;margin:6px 6px 0 0;border:1px solid var(--accent);background:#fff;color:var(--accent);cursor:pointer;border-radius:2px}
+.fit-clear{margin-top:9px;background:none;border:none;color:var(--muted);font-size:11.5px;text-decoration:underline;cursor:pointer;padding:0}
+
+@media (max-width:880px){
+  .qrbtn{display:none}
+  .qrwrap{display:block}
+  .hero{grid-template-columns:1fr;gap:22px;padding:28px 0 34px}
+  .hero-copy .lede{display:none}
+  .hero-copy h1{font-size:clamp(32px,9vw,46px);margin-bottom:6px}
+  .hero-copy .eyebrow{margin-bottom:10px}
+  .hero-fig img{height:min(74vw,430px)}
+  .hero-fig img{height:min(74vw,430px)}
+  .hero-fig figcaption{left:8px;right:8px;bottom:10px;max-width:none}
+  .pains{grid-template-columns:1fr}
+  .pain{border-right:none}
+  .steps{grid-template-columns:1fr;gap:20px}
+  .thumbs{grid-template-columns:repeat(4,1fr);gap:7px}
+  .thumb .cap{padding:5px 6px 6px;font-size:10.5px}
+  .thumb .cap b{font-size:11.5px}
+  .thumb .dots i{width:3px;height:3px}
+  .row2{grid-template-columns:1fr}
+  .plans{grid-template-columns:1fr}
+  .paybox{grid-template-columns:1fr}
+  .qrph{width:100%;max-width:250px}
+  .shop{grid-template-columns:1fr}
+  section.block{padding:50px 0}
+}
+@media (max-width:480px){
+  .thumbs{grid-template-columns:repeat(3,1fr);gap:8px}
+  .thumb .cap{padding:6px 7px 8px;font-size:11px}
+  .thumb .cap b{font-size:12px}
+  .fit-chips{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="wvbar" id="wvbar" hidden>
+  <b>你正在微信或抖音里打开这个页面，相册可能读不到。</b>点右上角「···」，选择「在浏览器打开」，就能正常选照片。苹果用 Safari，安卓用 Chrome。
+  <button class="x" id="wvClose" aria-label="关闭">×</button>
+</div>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand">上手<em>SHI SHOU</em></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <button class="mine-btn" id="mineBtn">我的试甲记录</button>
+      <a class="cta" href="#order">免费试一张</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">美甲决策工具 · 演示版 · 第 1 张免费</p>
+        <h1><span>先上手，</span><span class="light">再掏钱。</span></h1>
+        <p class="lede">你存下的那张美甲图里，是别人的手。先把它放回<b>你自己的手上</b>——你的肤色、你的甲型、你的手指粗细——再决定要不要花这一百八十块。</p>
+        <div class="act">
+          <a class="btn ghost" href="#how">它怎么工作</a>
+        </div>
+        <p class="fine">约 1 分钟出图 · 不磨皮、不瘦手、不改甲型</p>
+      </div>
+
+      <div class="upload-card" id="start">
+        <div class="uc-head"><span class="idx">01</span><b>放上你的手照</b><span class="uc-tag">第 1 张免费</span></div>
+        <div class="drop" id="drop">
+          <span class="big">点这里上传，或把照片拖进来</span>
+          <span class="sm">手背朝上 · 光线均匀 · 素甲最好 · 单张 10MB 以内</span>
+        </div>
+        <input type="file" id="handInput" accept="image/*" hidden>
+        <ul class="privacy">
+          <li>这张手照只用来生成这一单。</li>
+          <li>不进任何公开页面，不用于训练，别人搜不到。</li>
+          <li>7 天后自动删除；想提前删，报订单号给我。</li>
+        </ul>
+        <div class="freebar" id="freebar">你还有 <b id="freeLeft">1</b> 次免费试甲。出图失败不扣次数。</div>
+        <a class="btn block" href="#order" id="toStep2">手照有了，去选款
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <p class="uc-note" id="invHint" style="display:none"></p>
+        <p class="uc-note">照片在手机里，就用手机打开这一页；手背朝上、别开美颜，拍出来才对得上。</p>
+        <button class="qrbtn" id="qrBtn">照片在手机里？扫码用手机打开</button>
+      </div>
+    </section>
+
+    <figure class="hero-band">
+      <img src="assets/hero.jpg" alt="一只手做完裸粉猫眼美甲的特写" width="1200" height="1600">
+      <figcaption>同一款颜色，做在<b>不同手</b>上的差别，比颜色本身的差别更大。</figcaption>
+    </figure>
+  </div>
+
+  <div class="break">
+    <div class="wrap break-in">
+      <span class="quote-mark">“</span>
+      <p>网上翻车图最多的，从来不是难做的款，是<b>别人手上很好看</b>的款。</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="block">
+      <div class="pains">
+        <div class="pain">
+          <span class="num">01 / 显黑</span>
+          <p class="tagline">显黑</p>
+          <p>图里是冷白手模，你是黄皮暖调。同一个灰粉，她做是温柔，你做是灰蒙蒙、没气色。</p>
+        </div>
+        <div class="pain">
+          <span class="num">02 / 加钱</span>
+          <p class="tagline">加钱</p>
+          <p>团购写着 99 包含简单款，坐下来才被告知这个要加、那个要加。你不知道自己选的是哪一档。</p>
+        </div>
+        <div class="pain">
+          <span class="num">03 / 白做</span>
+          <p class="tagline">白做</p>
+          <p>做完不满意，卸掉重来，两个多小时和一次钱都没了。店家也丢了一个原本会回头的客人。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap narrow" id="how">
+    <section class="block" style="padding-top:0">
+      <div class="sec-head"><h2>三步，一张自己的手</h2><small>HOW IT WORKS</small></div>
+      <div class="steps">
+        <div class="step">
+          <div class="n">01</div>
+          <h3>拍一张手照</h3>
+          <div class="rule"></div>
+          <p>手背朝上，五指自然摊开，光线均匀，最好素甲。手机原相机就够，别开美颜。</p>
+        </div>
+        <div class="step">
+          <div class="n">02</div>
+          <h3>选一个款</h3>
+          <div class="rule"></div>
+          <p>内置 12 个常见款，也可以直接传你收藏的那张网图——我们要的就是它。</p>
+        </div>
+        <div class="step">
+          <div class="n">03</div>
+          <h3>看到结果</h3>
+          <div class="rule"></div>
+          <p>约 1 分钟出图，附这个款的甲型、色系和到店沟通话术。像不像，你自己判断。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== 下单 ========== -->
+  <div class="wrap narrow" id="order">
+    <section class="block" style="padding-top:0">
+      <div class="sec-head"><h2>开始试甲</h2><small>ORDER · 3 步 90 秒</small></div>
+
+      <div class="order-shell">
+        <!-- 01 手照（首屏已放好） -->
+        <div class="field">
+          <div class="field-h"><span class="idx">01</span><h3>你的手照</h3><span class="hint">在首屏上传，这里不用再传</span></div>
+          <div class="handrow" id="handrow">
+            <img id="handPrev" alt="你的手照" style="display:none">
+            <span id="handState">还没放。滚动到最上面，点上传框选一张。</span>
+            <button type="button" id="handChange">换一张</button>
+          </div>
+          <div class="fitbox" id="fitBox" style="display:none">
+            <button type="button" class="small-btn" id="fitBtn">测一下手型（可选，约 20 秒）</button>
+            <span class="fitnote">只看款，不上传。照片不会离开这台设备。</span>
+          </div>
+          <div class="fitres" id="fitRes" style="display:none"></div>
+        </div>
+
+        <!-- 02 款式 -->
+        <div class="field">
+          <div class="field-h"><span class="idx">02</span><h3>想做的款</h3><span class="hint">选一个，或自带图</span></div>
+          <div class="thumbs" id="thumbs"></div>
+          <div class="tipbar" id="tipbar"></div>
+          <div style="margin-top:12px">
+            <label class="lbl">或者直接上传你收藏的网图</label>
+            <div class="drop" id="styleDrop" style="min-height:76px;padding:14px">
+              <span class="big" style="font-size:13.5px">上传款式图（可选）</span>
+              <span class="sm">小红书 / 抖音截图都可以</span>
+            </div>
+            <input type="file" id="styleInput" accept="image/*" hidden>
+          </div>
+        </div>
+
+        <!-- 03 选项与联系 -->
+        <div class="field">
+          <div class="field-h"><span class="idx">03</span><h3>怎么发给你</h3><span class="hint">不会公开</span></div>
+          <div class="plans" id="plans">
+            <div class="plan sel" data-plan="free">
+              <h4>免费试一张</h4>
+              <div class="p">¥0</div>
+              <ul><li id="planFreeLeft">还剩 1 次免费</li><li>出图失败不计次数</li><li>约 1 分钟出图</li></ul>
+            </div>
+            <div class="plan" data-plan="hd">
+              <span class="badge">推荐</span>
+              <h4>三款对比</h4>
+              <div class="p">¥9.9<small>一次</small></div>
+              <ul><li>同一只手的 3 个款并排（含你选的那款）</li><li>到店决策卡：款名 / 甲型 / 加价提醒 / 一句话术</li><li>不满意免费重出一次</li></ul>
+            </div>
+          </div>
+          <div class="row2" style="margin-top:16px">
+            <div>
+              <label class="lbl">微信号 / 邮箱（必填）</label>
+              <input type="text" id="contact" placeholder="例：nail_lily 或 you@mail.com" autocomplete="off">
+            </div>
+            <div>
+              <label class="lbl">想补充的（可选）</label>
+              <input type="text" id="note" placeholder="例：甲床短，怕显手短" autocomplete="off">
+            </div>
+          </div>
+          <div class="submit-row">
+            <button class="btn" id="submitBtn">提交，等我的图
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+            <p class="note">演示版：免费那张直接出，不收费；三款对比模拟一步付款流程，不会真的收钱。</p>
+          </div>
+          <p class="err" id="err"></p>
+        </div>
+      </div>
+
+      <!-- 订单面板 -->
+      <div class="panel" id="panel">
+        <div class="panel-top">
+          <h3>已经收到你的手</h3>
+          <span class="oid" id="oid"></span>
+        </div>
+        <div class="state" id="state"><span class="pulse"></span><span id="stateText">正在排图，请留在这个页面……</span></div>
+
+        <div id="resultWrap" style="display:none">
+          <div class="result-grid" id="resultGrid"></div>
+
+          <div class="again">
+            <b>同一只手，换个款再看看。</b>
+            <p>你的手照已经存好了，不用重拍——挑一个新款，2 分钟内给你三张并排，看到哪个最稳再出门。</p>
+            <div class="row">
+              <button class="btn" id="againBtn">换个款再来一张<span class="price9">¥9.9</span></button>
+              <a class="small-btn" id="dlBtn" download="试甲效果图.jpg">先把这张存进相册</a>
+              <button class="small-btn" id="shareBtn">生成分享图</button>
+            </div>
+          </div>
+
+          <div class="invite" id="inviteBox">
+            <b>拉一个也在纠结款的女生。</b>
+            <p>她试完第一张，你和她各得 1 次免费。每人 30 天最多 5 次，别刷。</p>
+            <div class="row">
+              <span class="code" id="invCode">—</span>
+              <button class="small-btn" id="invCopy">复制邀请链接</button>
+            </div>
+          </div>
+
+          <div class="fb" id="fb">
+            <p class="q">这张图，像不像你的手？</p>
+            <div class="btns" id="fbBtns">
+              <button type="button" data-fb="like">像</button>
+              <button type="button" data-fb="no">不像</button>
+            </div>
+            <div class="fb-reasons" id="fbReasons">
+              <p class="lbl2">哪里不像？可以多选。收到这条，我会先改出图指令再重出，不扣次数。</p>
+              <div class="chips" id="fbChips">
+                <button type="button" class="chip" data-r="甲型不对">甲型不对</button>
+                <button type="button" class="chip" data-r="颜色显黑">颜色显黑</button>
+                <button type="button" class="chip" data-r="手型被改了">手型被改了</button>
+                <button type="button" class="chip" data-r="不是我想要的款">不是我想要的款</button>
+              </div>
+              <button type="button" class="small-btn" id="fbSend">提交</button>
+            </div>
+            <p class="fb-thanks" id="fbThanks">收到了，谢谢你。你说的问题会直接改进下一个人看到的图。</p>
+          </div>
+
+          <div class="result-actions" style="margin-top:14px">
+            <button class="small-btn" id="cardBtn">生成到店决策卡</button>
+            <button class="small-btn" id="talkBtn">看这个款的到店话术</button>
+            <button class="small-btn" id="copyId">复制订单号</button>
+          </div>
+          <div class="talk" id="talk"></div>
+        </div>
+
+        <div class="paybox" id="paybox" style="display:none">
+          <div class="qrph" id="qrph">演示环境<br>这里是付款步骤<br>不会真的收钱</div>
+          <div class="payright">
+            <div class="price">¥9.9</div>
+            <p>演示流程：点下面按钮模拟已付款，随后出三款对比 + 到店决策卡。正式版这里是扫码付款 + 核对截图。</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="small-btn" id="shotBtn">演示：模拟已付款</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FAQ -->
+  <div class="wrap narrow">
+    <section class="block" style="padding-top:0">
+      <div class="sec-head"><h2>先说清楚</h2><small>FAQ</small></div>
+      <div class="faq">
+        <div class="qa"><h4>会把我的手 P 瘦、P 白吗？</h4><p>不会。规则写死在出图指令里：保留你的手型、手指粗细、肤色冷暖、指节和皮肤纹理，不磨皮不美白。你要看的就是真实效果，美化了它就没用了。</p></div>
+        <div class="qa"><h4>为什么不能立刻出图？</h4><p>现在大约 1 分钟（付费的三款约 2 分钟）。要一张一张生成，不是套模板贴图，所以指甲位置、光泽、甲缘过渡才对得上你的手。万一出来的图不像你的手，报订单号，免费重出。</p></div>
+        <div class="qa"><h4>图能直接拿去店里做吗？</h4><p>能当你和美甲师之间的沟通依据，但不要当成验收标准。真实做出来在厚度、光泽、甲片长度上一定有差异，这也是我们要提前告诉你复杂度、提醒你先问加价的原因。</p></div>
+        <div class="qa"><h4>我的手照会被乱用吗？</h4><p>不会。只用于这一次生成，不用于训练、不做展示、不发任何公开内容。手照和成品图 <b>7 天后自动删除</b>（服务器每 6 小时清理一次过期文件），要提前删，报订单号，我当场删给你看。</p></div>
+        <div class="qa"><h4>一天能做几张？</h4><p>同一台设备每小时最多 3 单、同一个微信号每天 2 单。不是要拦你，是这张图每张都要真花钱生成，不限量的话真客人的图会被刷单的排到后面。</p></div>
+        <div class="qa"><h4>做不到的地方写在哪？</h4><p>写在一页里：<a class="footlink" href="方法与边界.html">方法与边界</a>。出图怎么跑、哪些东西它保证不了、钱怎么退，都在那儿，不藏在问答里。</p></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 店铺版 -->
+  <div class="wrap">
+    <section class="shop">
+      <div>
+        <h2>如果你是美甲店，或者卖穿戴甲</h2>
+        <p>客人坐下来手里基本都是同一张网图。让她先在自己的手上看见，再报价，比做完再解释省事得多。</p>
+        <p>给店里用：客人到店前先试、先选款、先接受加价；给穿戴甲用：下单前先试戴，退货率能实打实往下压。</p>
+      </div>
+      <div>
+        <div class="price">¥199<small> / 月 / 店</small></div>
+        <p style="font-size:12.5px">前 10 家免费试用一个月，只要求你反馈一句：客人有没有因此多加了单。</p>
+        <a class="btn" href="#order">留个联系方式</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <footer>
+      <div class="line">
+        <span><b style="font-family:var(--serif);font-size:13px">上手</b> · 演示版（界面与流程预览，出图为示例占位）&nbsp;|&nbsp; <a class="footlink" href="方法与边界.html">方法与边界</a></span>
+        <span>效果图为 AI 生成，仅供决策参考，不作为到店验收标准。</span>
+      </div>
+    </footer>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="hd"><b>我的试甲记录</b><button id="sheetClose" aria-label="关闭">×</button></div>
+    <p class="empty" id="sheetEmpty">这台设备上还没有记录。试完一单，这里会留下最近 5 单——链接丢了、微信清了缓存，也能从这儿找回图。</p>
+    <div id="sheetList"></div>
+  </div>
+
+  <div class="sheet" id="qrSheet">
+    <div class="hd"><b>用手机打开</b><button id="qrClose" aria-label="关闭">×</button></div>
+    <div class="qrwrap">
+      <div class="qrbox" id="qrBox"></div>
+      <div class="qrinfo">
+        <b>手照在手机相册里，用手机打开最快。</b>
+        扫码这页会带到手机上，拍完直接出图。电脑上也能接着看。
+        <p class="qrlink" id="qrUrl"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</main>
+
+<script src="assets/vendor/qrcode.min.js"></script>
+<script>
+const STYLES = [
+  { id:1,  name:'裸粉单色',   tone:'冷调', white:2, tip:'百搭，但偏冷调，黄皮容易显手黄。喜欢的话建议做跳色，不要整手铺满。', talk:'这个款是裸粉单色，按我自己的短椭圆甲型做，不延长。色号我希望偏粉一点、透一点，不要发灰的那种。' },
+  { id:2,  name:'深酒红',     tone:'暖调', white:5, tip:'黄皮最稳的一档，显白、有气场，通勤也不会过。短甲照样压得住。', talk:'这个款是深酒红单色，短椭圆、不延长。麻烦先确认这算不算套餐里的单色款，会不会加钱，我付款前先说清楚。' },
+  { id:3,  name:'法式白边',   tone:'中性', white:3, tip:'短甲会显短。要好看，甲床得干净、指节不要有太多褶皱和倒刺。', talk:'法式白边，短椭圆。白边不要拉太宽，留一点点就好，我不想要那种很硬的护士感。' },
+  { id:4,  name:'奶咖猫眼',   tone:'暖调', white:4, tip:'最不容易翻车的一档。提气色，日常、上班都稳，几乎不挑手。', talk:'奶咖猫眼，短椭圆不延长。猫眼的光带我想拉斜一点，不要太正，正了显老气。' },
+  { id:5,  name:'碎钻法式',   tone:'中性', white:3, tip:'需要一点长度，短甲上会挤。贴钻基本都另收费，先问清楚一颗多少。', talk:'碎钻法式。我甲床偏短，你先帮我看看这个白边宽度会不会挤。贴钻是按颗算还是按手算，先说价格。' },
+  { id:6,  name:'豆沙红',     tone:'暖调', white:4, tip:'黄皮友好，素颜也压得住，第一次做美甲选它最安全。', talk:'豆沙红单色，短椭圆。想偏红一点不要偏橘，橘调我上手会发黄。' },
+  { id:7,  name:'透色腮红甲', tone:'冷调', white:2, tip:'饱和度低，肤色偏黄容易显灰显脏。做之前一定要先看上手图。', talk:'透色腮红甲。我肤色偏黄，先做一只手的无名指看看效果，不行我们就换款，别整手做完。' },
+  { id:8,  name:'黑金猫眼',   tone:'冷调', white:3, tip:'很挑肤色。白皮加分，暖黄皮容易显手暗、显厚。', talk:'黑金猫眼，短椭圆不延长。金色那层不要太多，多了显脏，我只要一点点光。' },
+  { id:9,  name:'奶白渐变',   tone:'中性', white:2, tip:'容易显厚重。手部有细纹、偏粗糙的时候，这个款会放大它。', talk:'奶白渐变，短椭圆。渐变不要从甲根开始，从中间开始过渡，不然会显得指甲很短。' },
+  { id:10, name:'焦糖棕',     tone:'暖调', white:5, tip:'秋冬黄皮首选，衬肤色，短甲也撑得住，几乎不需要延长。', talk:'焦糖棕单色，短椭圆不延长。想要偏红棕一点，不要偏黄棕，黄棕我上手像涂了酱油。' },
+  { id:11, name:'灰粉猫眼',   tone:'冷调', white:1, tip:'灰度高，是网上翻车图最多的一款。想显白，宁可选偏粉透的，别选偏灰深的。', talk:'灰粉猫眼。我肤色偏黄，灰度高我上手会发灰。能不能先用一个指甲试色，看着不对就换。' },
+  { id:12, name:'樱桃红金箔', tone:'暖调', white:5, tip:'显白，但金箔、手绘基本都要加价，而且很吃美甲师的手。', talk:'樱桃红配金箔。金箔是贴的还是画的、加多少钱、多久能做完，我想在开始之前全部确认。' }
+];
+
+const $ = s => document.querySelector(s);
+const state = { hand:null, styleId:null, styleImg:null, plan:'free', orderId:null, timer:null, reuseFrom:null, styleName:'', results:[] };
+
+/* ---------- 本机记忆：手照 / 免费次数 / 最近 5 单 ---------- */
+const LS = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+};
+
+function freeLeft(){ return Math.max(0, 1 + LS.get('ss_free_bonus', 0) - LS.get('ss_free_cast', []).length); }
+
+function paintFree(){
+  const n = freeLeft();
+  const bonus = LS.get('ss_free_bonus', 0);
+  const fb = $('#freebar');
+  if (n > 0) fb.innerHTML = '你还有 <b id="freeLeft">' + n + '</b> 次免费试甲。' + (bonus > 0 ? '其中 ' + bonus + ' 次是邀请奖励。' : '出图失败不扣次数。');
+  else fb.innerHTML = '<span class="off">这台设备的免费次数已经用完了。下一张就是 ¥9.9 三款对比——手照存着，直接换个款。</span>';
+  const pl = $('#planFreeLeft');
+  if (pl) pl.textContent = n > 0 ? ('还剩 ' + n + ' 次免费') : '这台设备已用掉';
+  /* 免费已经用掉时，默认落在 9.9 三款对比上，不让她点了提交才发现 */
+  if (n === 0 && state.plan === 'free') {
+    state.plan = 'hd';
+    [...$('#plans').children].forEach(c => c.classList.toggle('sel', c.dataset.plan === 'hd'));
+  }
+}
+
+/* ---------- 我的邀请码 / 提示 ---------- */
+const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function myCode(){
+  let c = LS.get('ss_mycode', null);
+  if (!c) {
+    c = Array.from({ length: 6 }, () => CODE_ABC[Math.floor(Math.random() * CODE_ABC.length)]).join('');
+    LS.set('ss_mycode', c);
+  }
+  return c;
+}
+function invLink(){ return location.origin + location.pathname + '?inv=' + myCode(); }
+let toastTimer = null;
+function showToast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 3400);
+}
+async function syncInvite(){
+  try {
+    const r = await fetch('/api/invite/status?code=' + myCode());
+    const j = await r.json();
+    if (j && typeof j.bonus === 'number') { LS.set('ss_free_bonus', j.bonus); paintFree(); }
+  } catch(e) {}
+}
+async function claimInvite(orderId){
+  const inv = LS.get('ss_pending_inv', null);
+  if (!inv) return;
+  try {
+    const r = await fetch('/api/invite/claim', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: inv, orderId, claimer: myCode() })
+    });
+    const j = await r.json();
+    if (j && j.ok) {
+      LS.set('ss_free_bonus', LS.get('ss_free_bonus', 0) + (j.bonus || 1));
+      LS.set('ss_pending_inv', null);
+      paintFree();
+      showToast('邀请奖励到账：你多了 1 次免费。');
+    } else if (j && j.reason) {
+      LS.set('ss_pending_inv', null);
+      console.log('邀请没领上：', j.reason);
+    }
+  } catch(e) {}
+}
+
+function paintHand(){
+  const drop = $('#drop');
+  if (state.hand) {
+    drop.classList.add('has');
+    drop.innerHTML = '<img src="' + state.hand + '" alt="你的手照"><span class="again">' + (state.handFromStore ? '这是你上次那张手 · 点这里换一张' : '点这里换一张') + '</span>';
+    $('#handPrev').src = state.hand;
+    $('#handPrev').style.display = 'block';
+    $('#handState').innerHTML = '<span class="ok">✓ 手照已放好</span>，在这里不用再传一次。';
+  } else {
+    drop.classList.remove('has');
+    drop.innerHTML = '<span class="big">点这里上传，或把照片拖进来</span><span class="sm">手背朝上 · 光线均匀 · 素甲最好 · 单张 10MB 以内</span>';
+    $('#handPrev').style.display = 'none';
+    $('#handState').textContent = '还没放。滚动到最上面，点上传框选一张。';
+  }
+  renderFit();
+}
+
+function renderSheet(){
+  const list = LS.get('ss_orders', []);
+  $('#sheetEmpty').style.display = list.length ? 'none' : 'block';
+  $('#sheetList').innerHTML = list.map(o =>
+    '<div class="mitem">' +
+      (o.thumb ? '<img src="' + o.thumb + '" alt="">' : '<img alt="" style="visibility:hidden">') +
+      '<span class="t">' + (o.name || '试甲') + '<em>' + o.id + ' · ' + new Date(o.at).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) + '</em></span>' +
+      '<a href="#" data-id="' + o.id + '">查看</a>' +
+    '</div>'
+  ).join('');
+}
+
+function rememberOrder(id, name){
+  const list = LS.get('ss_orders', []).filter(x => x.id !== id);
+  list.unshift({ id, name: name || '', at: Date.now(), thumb: '' });
+  LS.set('ss_orders', list.slice(0, 5));
+  renderSheet();
+}
+
+function markThumb(id, url){
+  const list = LS.get('ss_orders', []);
+  const o = list.find(x => x.id === id);
+  if (o && url) o.thumb = url;
+  if (o) LS.set('ss_orders', list);
+  renderSheet();
+}
+
+/* ---------- 款式 ---------- */
+const dots = n => '<span class="dots">' + [1,2,3,4,5].map(i => '<i class="' + (i<=n?'on':'') + '"></i>').join('') + '</span>';
+
+function renderThumbs(){
+  $('#thumbs').innerHTML = STYLES.map(s =>
+    '<button type="button" class="thumb" data-id="' + s.id + '">' +
+      '<img src="assets/styles/style-' + String(s.id).padStart(2,'0') + '.jpg" alt="' + s.name + '" loading="lazy">' +
+      '<span class="cap"><b>' + s.name + '</b>' + s.tone + ' · 显白 ' + s.white + '/5</span>' +
+    '</button>'
+  ).join('');
+  $('#thumbs').addEventListener('click', e => {
+    const b = e.target.closest('.thumb'); if(!b) return;
+    state.styleId = Number(b.dataset.id); state.styleImg = null;
+    [...$('#thumbs').children].forEach(c => c.classList.toggle('sel', c === b));
+    const s = STYLES.find(x => x.id === state.styleId);
+    $('#tipbar').innerHTML = '<b>' + s.name + '</b> · ' + s.tone + '：' + s.tip;
+    $('#tipbar').classList.add('on');
+    resetStyleDrop();
+  });
+}
+
+/* ---------- 手部分析接入 ---------- */
+const HAND_KEY = 'shangshou.hand.v1';
+function readHandProfile(){ try { return JSON.parse(localStorage.getItem(HAND_KEY) || 'null'); } catch(e){ return null; } }
+function handRec(profile){
+  const need = profile.needWhite || 3;
+  const warm = String(profile.toneLabel || '').indexOf('偏黄') >= 0;
+  const pool = STYLES.filter(s => s.white >= need && (!warm || s.tone !== '冷调'))
+    .sort((x, y) => (y.white - x.white) || (x.id - y.id));
+  const fb = STYLES.filter(s => s.white >= need).sort((x, y) => y.white - x.white);
+  return (pool.length ? pool : fb).slice(0, 2);
+}
+function selectStyleById(id){
+  const kids = [...$('#thumbs').children];
+  const b = kids.find(c => c.dataset.id === String(id));
+  if (!b) return false;
+  state.styleId = id; state.styleImg = null;
+  kids.forEach(c => c.classList.toggle('sel', c === b));
+  const s = STYLES.find(x => x.id === id);
+  $('#tipbar').innerHTML = '<b>' + s.name + '</b> · ' + s.tone + '：' + s.tip;
+  $('#tipbar').classList.add('on');
+  try { resetStyleDrop(); } catch(e) {}
+  return true;
+}
+function storeHandProfile(m){
+  const p = {
+    handRatio: m.handRatio, tipRatio: m.tipRatio, d24: m.d24,
+    handLabel: m.handLabel, tipLabel: m.tipLabel,
+    lab: m.lab, ita: m.ita, toneLabel: m.toneLabel, lightLabel: m.lightLabel,
+    needWhite: m.needWhite, at: m.at || Date.now()
+  };
+  try { localStorage.setItem(HAND_KEY, JSON.stringify(p)); } catch(e) {}
+  return p;
+}
+function fitSentence(p){
+  const a = p.handLabel === '偏宽厚' ? '手背偏宽，满钻、整手亮片会显手更宽，细闪和单色更稳。' : '手背比例均衡，整手铺色不用担心显手宽。';
+  const b = p.tipLabel === '偏短宽' ? '指尖段偏短，法式白边、奶白渐变、大颗贴钻会更压指头，先避开。' : '指尖长度不挑款，猫眼、单色、法式都能做。';
+  return a + b;
+}
+function renderFit(){
+  const box = $('#fitBox'), res = $('#fitRes');
+  if (!box || !res) return;
+  const p = readHandProfile();
+  if (!state.hand) { box.style.display = 'none'; res.style.display = 'none'; state.handProfile = null; return; }
+  if (!p || !p.tipRatio || !p.handLabel) { box.style.display = 'flex'; res.style.display = 'none'; state.handProfile = null; return; }
+  state.handProfile = { handRatio: p.handRatio, tipRatio: p.tipRatio, needWhite: p.needWhite, tone: p.toneLabel, light: p.lightLabel, at: p.at };
+  box.style.display = 'none';
+  res.style.display = 'block';
+  const rec = handRec(p);
+  res.innerHTML =
+    '<div class="fit-chips">' +
+      '<span><i>手型</i>' + p.handLabel + '</span>' +
+      '<span><i>指尖</i>' + p.tipLabel + '</span>' +
+      '<span><i>肤色</i>' + (p.lightLabel || '') + ' · ' + (p.toneLabel || '') + '</span>' +
+    '</div>' +
+    '<p class="fit-say">' + fitSentence(p) + '</p>' +
+    (rec.length ? '<p class="fit-pick">按这双手，这两款更稳：' + rec.map(s => '<button type="button" data-rid="' + s.id + '">' + s.name + '</button>').join('') + '</p>' : '') +
+    '<button type="button" class="fit-clear" id="fitClear">清掉这个结果</button>';
+}
+$('#fitRes').addEventListener('click', e => {
+  const b = e.target.closest('button[data-rid]');
+  if (b) return selectStyleById(Number(b.dataset.rid));
+  if (e.target.closest('#fitClear')) {
+    try { localStorage.removeItem(HAND_KEY); } catch(e) {}
+    renderFit();
+  }
+});
+$('#fitBox').addEventListener('click', async e => {
+  if (!e.target.closest('#fitBtn') || !state.hand) return;
+  const btn = $('#fitBtn');
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = '正在算……首次要下模型，约 20 秒';
+  try {
+    const mod = await import('./assets/hand-analysis.js');
+    const m = await mod.analyzeImage(state.hand);
+    if (!m || !m.ok) { showToast('没认出这只手：手背朝上、五指分开、光线均匀，再试一张'); }
+    else { storeHandProfile(m); renderFit(); showToast('看完了。结论只给你看，不会上传。'); }
+  } catch (err) {
+    console.error(err);
+    showToast('这段分析没跑起来，不影响出图。可以先跳过。');
+  }
+  btn.disabled = false; btn.textContent = old;
+});
+
+/* ---------- 图片压缩 ---------- */
+function compress(file, max, cb){
+  const img = new Image();
+  img.onload = () => {
+    let w = img.width, h = img.height;
+    const s = Math.min(1, max / Math.max(w, h));
+    w = Math.round(w * s); h = Math.round(h * s);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    cb(c.toDataURL('image/jpeg', 0.88));
+  };
+  img.onerror = () => alert('这张图读不出来，换一张试试');
+  img.src = URL.createObjectURL(file);
+}
+
+/* ---------- 上传 ---------- */
+function bindDrop(boxSel, inputSel, max, onDone){
+  const box = $(boxSel), input = $(inputSel);
+  box.addEventListener('click', () => input.click());
+  box.addEventListener('dragover', e => { e.preventDefault(); box.style.borderColor = '#7B2D3B'; });
+  box.addEventListener('dragleave', () => { box.style.borderColor = ''; });
+  box.addEventListener('drop', e => {
+    e.preventDefault(); box.style.borderColor = '';
+    if (e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]);
+  });
+  input.addEventListener('change', () => { if (input.files[0]) handle(input.files[0]); });
+  function handle(f){
+    if (!/^image\//.test(f.type)) return alert('请上传图片');
+    compress(f, max, data => onDone(data, box));
+  }
+}
+
+bindDrop('#drop', '#handInput', 1600, (data, box) => {
+  state.hand = data;
+  state.handFromStore = false;
+  state.reuseFrom = null;
+  paintHand();
+  if (!LS.set('ss_hand', data)) console.warn('手照存不进本机（空间不够），下次要重新传一张');
+});
+
+$('#handChange').addEventListener('click', () => $('#handInput').click());
+
+bindDrop('#styleDrop', '#styleInput', 900, (data, box) => {
+  state.styleImg = data; state.styleId = null;
+  [...$('#thumbs').children].forEach(c => c.classList.remove('sel'));
+  $('#tipbar').classList.remove('on');
+  box.classList.add('has');
+  box.innerHTML = '<img src="' + data + '" alt="款式图" style="max-height:120px"><span class="again">已换成你上传的款 · 点这里重传</span>';
+});
+
+function resetStyleDrop(){
+  const box = $('#styleDrop');
+  box.classList.remove('has');
+  box.innerHTML = '<span class="big" style="font-size:13.5px">上传款式图（可选）</span><span class="sm">小红书 / 抖音截图都可以</span>';
+}
+
+/* ---------- 套餐 ---------- */
+$('#plans').addEventListener('click', e => {
+  const p = e.target.closest('.plan'); if(!p) return;
+  [...$('#plans').children].forEach(c => c.classList.toggle('sel', c === p));
+  state.plan = p.dataset.plan;
+});
+
+/* ---------- 提交 ---------- */
+$('#submitBtn').addEventListener('click', async () => {
+  const err = $('#err'); err.classList.remove('on');
+  const contact = $('#contact').value.trim();
+  if (!state.hand && !state.reuseFrom) { err.textContent = '还差一张手照。滚动到最上面，点上传框选一张。'; err.classList.add('on'); return; }
+  if (!state.styleId && !state.styleImg) { err.textContent = '选一个款，或者传一张你收藏的图。'; err.classList.add('on'); return; }
+  if (contact.length < 3) { err.textContent = '留个微信号或邮箱，不然图发不出去。'; err.classList.add('on'); return; }
+
+  const btn = $('#submitBtn'); btn.disabled = true; btn.textContent = '提交中……';
+  const ctl = new AbortController();
+  const to = setTimeout(() => ctl.abort(), 45000);
+  try {
+    const r = await fetch('/api/order', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      signal: ctl.signal,
+      body: JSON.stringify({
+        hand: state.hand || null, styleId: state.styleId, styleImg: state.styleImg,
+        reuseFrom: state.hand ? null : (state.reuseFrom || null),
+        contactType: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) ? 'email' : 'wechat',
+        contact, plan: state.plan, note: $('#note').value.trim(),
+        handProfile: state.handProfile || null
+      })
+    });
+    const j = await r.json();
+    if (!j || !j.ok) throw new Error((j && j.error) || '提交失败，请再点一次');
+    state.orderId = j.id;
+    state.reuseFrom = j.id;
+    const st = STYLES.find(x => x.id === state.styleId);
+    rememberOrder(j.id, st ? st.name : (state.styleImg ? '自带款' : ''));
+    openPanel(j.id);
+    claimInvite(j.id);
+    btn.textContent = '提交，等我的图'; btn.disabled = false;
+  } catch (e) {
+    console.error('submit failed', e);
+    err.textContent = (e && e.name === 'AbortError') ? '网络有点慢，再点一次提交就行。' : (e.message || '提交失败');
+    err.classList.add('on');
+    btn.disabled = false; btn.textContent = '提交，等我的图';
+  } finally {
+    clearTimeout(to);
+  }
+});
+
+/* ---------- 订单面板 ---------- */
+function openPanel(id){
+  state.orderId = id;
+  state.reuseFrom = id;
+  try { history.replaceState(null, '', '#o=' + id); } catch (e) {}
+  $('#panel').classList.add('on');
+  $('#oid').textContent = '订单号 ' + id;
+  /* 换单必须把上一单的结果清干净，否则旧图会挂在新订单号下面 */
+  $('#resultWrap').style.display = 'none';
+  $('#resultGrid').innerHTML = '';
+  $('#talk').classList.remove('on'); $('#talk').innerHTML = '';
+  $('#paybox').style.display = 'none';
+  $('#stateText').textContent = '正在排图，请留在这个页面……';
+  /* 换单时把上一单的反馈状态清掉 */
+  $('#fbReasons').classList.remove('on');
+  $('#fbThanks').classList.remove('on');
+  [...$('#fbBtns').children].forEach(x => x.classList.remove('on'));
+  fbPick.clear();
+  $('#panel').scrollIntoView({ behavior:'smooth', block:'center' });
+  if (state.plan === 'hd') {
+    $('#paybox').style.display = 'grid';
+    $('#stateText').textContent = '还没开始出图：演示里这一单要先模拟付款，点下面的按钮。';
+  }
+  poll();
+  if (state.timer) clearInterval(state.timer);
+  state.timer = setInterval(poll, 5000);
+  setTimeout(() => {
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    if ($('#resultWrap').style.display !== 'block') {
+      $('#stateText').textContent = '还在出图。出好了会发到你留的微信或邮箱，也可以留在这个页面，刷新就能看到。';
+    }
+  }, 180000);
+}
+
+async function poll(){
+  if (!state.orderId) return;
+  try {
+    const r = await fetch('/api/order/' + state.orderId);
+    const j = await r.json();
+    if (j.status === 'pending_pay' || (j.plan === 'hd' && !j.paid && !j.result)) {
+      state.plan = 'hd';
+      $('#paybox').style.display = 'grid';
+      $('#stateText').textContent = '等付款：点下面按钮模拟已付款，就开始出三款。';
+    }
+    if (j.status === 'failed' && !j.result) {
+      $('#stateText').innerHTML = '这一张没出来——出图服务那边卡住了，不是你的照片问题。<b>报订单号给我，我手工补一张</b>，这次不算你的次数。';
+      $('#paybox').style.display = 'none';
+      if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    }
+    if (j.result) {
+      $('#resultWrap').style.display = 'block';
+      const list = (j.results && j.results.length) ? j.results : [{ url: j.result, name: j.styleName || '' }];
+      state.results = list;
+      state.styleName = j.styleName || state.styleName;
+      if (j.styleId) state.styleId = Number(j.styleId);
+      const grid = $('#resultGrid');
+      grid.className = 'result-grid' + (list.length > 1 ? ' multi' : '');
+      const v = Date.now();
+      grid.innerHTML = list.map(x => '<figure><img src="' + x.url + '?v=' + v + '" alt="' + (x.name || '试甲效果') + '"><figcaption>' + (x.name || '') + '</figcaption></figure>').join('');
+      $('#dlBtn').href = list[0].url;
+      markThumb(state.orderId, list[0].url);
+      /* 免费额度只在真出图之后才记一次：失败不扣次数 */
+      if (j.plan === 'free') {
+        const cast = LS.get('ss_free_cast', []);
+        if (!cast.includes(state.orderId)) { cast.push(state.orderId); LS.set('ss_free_cast', cast); paintFree(); }
+      }
+      $('#stateText').textContent = list.length > 1 ? ('出好了，' + list.length + ' 个款并排给你看。') : '出好了。点下方保存。';
+      if (state.timer) clearInterval(state.timer);
+      $('#paybox').style.display = 'none';
+    }
+  } catch (e) {}
+}
+
+$('#copyId').addEventListener('click', () => navigator.clipboard.writeText(state.orderId || '').then(() => alert('订单号已复制')));
+$('#talkBtn').addEventListener('click', () => {
+  const s = STYLES.find(x => x.id === state.styleId);
+  const box = $('#talk');
+  box.innerHTML = '<b>到店这样说</b>' + (s ? s.talk : '把这张图直接给美甲师看，先说一句：按我自己的甲型做，不延长，加价的部分请先报给我。') + '\n\n再补一句：卸甲和修补算不算在套餐里，做不到效果要不要重做。';
+  box.classList.add('on');
+});
+
+/* ---------- 到店决策卡 ---------- */
+function wrapText(ctx, text, maxW){
+  const lines = []; let line = '';
+  for (const ch of String(text || '')){
+    if (ctx.measureText(line + ch).width > maxW) { lines.push(line); line = ch; }
+    else line += ch;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+$('#cardBtn').addEventListener('click', async () => {
+  if (!state.results || !state.results.length) return;
+  const btn = $('#cardBtn'); const old = btn.textContent;
+  btn.disabled = true; btn.textContent = '正在做卡……';
+  try {
+    const st = STYLES.find(x => x.id === state.styleId) || {};
+    const name = state.styleName || state.results[0].name || '试甲效果';
+    const img = await loadImg(state.results[0].url);
+    const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#F7F3EE'; ctx.fillRect(0, 0, 1080, 1920);
+    ctx.fillStyle = '#7B2D3B'; ctx.font = '600 34px "Noto Sans SC","PingFang SC",sans-serif';
+    ctx.fillText('上手 · 到店决策卡', 56, 96);
+    ctx.fillStyle = '#7A6E62'; ctx.font = '400 24px "Noto Sans SC","PingFang SC",sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(new Date().toLocaleDateString('zh-CN'), 1024, 96);
+    ctx.textAlign = 'left';
+
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(56, 140, 968, 1000, 14); ctx.clip();
+    drawCover(ctx, img, 56, 140, 968, 1000);
+    ctx.restore();
+
+    ctx.fillStyle = '#1A1614'; ctx.font = '700 60px "Noto Sans SC","PingFang SC",sans-serif';
+    ctx.fillText(name, 56, 1230);
+
+    const hp = state.handProfile || {};
+    const shape = hp.tipLabel === '偏短宽' ? '短方形 / 短圆形，别做长尖'
+              : hp.tipLabel === '偏修长' ? '方圆形，本甲长度就够'
+              : '短椭圆，本甲长度';
+    const rows = [
+      ['建议甲型', shape],
+      ['色系', (st.tone || '—') + ' · 显白 ' + (st.white || '—') + '/5'],
+      ['订单号', state.orderId || '—']
+    ];
+    let y = 1290;
+    rows.forEach(r => {
+      ctx.fillStyle = '#7A6E62'; ctx.font = '400 26px "Noto Sans SC","PingFang SC",sans-serif';
+      ctx.fillText(r[0], 56, y);
+      ctx.fillStyle = '#1A1614'; ctx.font = '500 30px "Noto Sans SC","PingFang SC",sans-serif';
+      ctx.fillText(r[1], 240, y);
+      y += 52;
+    });
+
+    ctx.strokeStyle = '#E3D9CC'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(56, y + 12); ctx.lineTo(1024, y + 12); ctx.stroke();
+    y += 70;
+
+    ctx.fillStyle = '#7B2D3B'; ctx.font = '600 28px "Noto Sans SC","PingFang SC",sans-serif';
+    ctx.fillText('先问清加价', 56, y);
+    y += 44;
+    ctx.fillStyle = '#1A1614'; ctx.font = '400 27px "Noto Sans SC","PingFang SC",sans-serif';
+    const warn = (st.tip || '') + ' 纯色、单色猫眼一般含在套餐里；手绘、贴钻、金箔、延长通常另计，先报价再开始。';
+    wrapText(ctx, warn, 940).slice(0, 5).forEach(l => { ctx.fillText(l, 56, y); y += 40; });
+
+    y += 34;
+    ctx.fillStyle = '#7B2D3B'; ctx.font = '600 28px "Noto Sans SC","PingFang SC",sans-serif';
+    ctx.fillText('到店这样说', 56, y);
+    y += 44;
+    ctx.fillStyle = '#3D3630'; ctx.font = '400 27px "Noto Sans SC","PingFang SC",sans-serif';
+    wrapText(ctx, '“' + (st.talk || '按我自己的甲型做，不延长；加价的部分请先报给我。') + '”', 940).slice(0, 6).forEach(l => { ctx.fillText(l, 56, y); y += 40; });
+
+    ctx.fillStyle = '#7A6E62'; ctx.font = '400 22px "Noto Sans SC","PingFang SC",sans-serif';
+    wrapText(ctx, '这是沟通依据，不是验收标准：真实做出来在厚度、光泽、甲片长度上一定有差异。', 940)
+      .forEach((l, i) => ctx.fillText(l, 56, 1812 + i * 32));
+    ctx.fillText('上手 · 先看见，再出门', 56, 1884);
+
+    const a = document.createElement('a');
+    a.href = c.toDataURL('image/jpeg', 0.92);
+    a.download = '到店决策卡-' + name + '.jpg';
+    a.click();
+    showToast('决策卡做好了，已经开始下载。');
+  } catch (e) {
+    console.error(e);
+    showToast('这张图存不下来（跨域限制），长按图片保存，或换个浏览器再试。');
+  }
+  btn.disabled = false; btn.textContent = old;
+});
+
+/* ---------- 收款（演示壳：模拟付款，不上传截图） ---------- */
+$('#shotBtn').addEventListener('click', async () => {
+  if (!state.orderId) return;
+  try {
+    const r = await fetch('/api/order/' + state.orderId + '/pay', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ shot: null })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      $('#stateText').textContent = (j && j.error) || '演示付款没成功，再点一次。';
+      return;
+    }
+    $('#stateText').textContent = '演示付款已记录，正在出三款，稍等一下。';
+    $('#paybox').style.display = 'none';
+  } catch (e) {
+    $('#stateText').textContent = '演示环境网络卡住了，再点一次。';
+  }
+});
+
+/* ---------- 结果页：换个款再来一张 ---------- */
+$('#againBtn').addEventListener('click', () => {
+  if (!state.orderId) return;
+  state.reuseFrom = state.orderId;
+  state.plan = 'hd';
+  [...$('#plans').children].forEach(c => c.classList.toggle('sel', c.dataset.plan === 'hd'));
+  $('#handState').innerHTML = '<span class="ok">✓</span> 用上一单存好的手照，不用重拍。';
+  $('#submitBtn').textContent = '用这张手照，出三款 ¥9.9';
+  document.querySelector('#order').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+/* ---------- 反馈 ---------- */
+const fbPick = new Set();
+async function postFeedback(payload){
+  if (!state.orderId) return false;
+  try {
+    const r = await fetch('/api/order/' + state.orderId + '/feedback', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    return r.ok;
+  } catch(e){ return false; }
+}
+
+$('#fbBtns').addEventListener('click', async e => {
+  const b = e.target.closest('[data-fb]'); if (!b) return;
+  [...$('#fbBtns').children].forEach(x => x.classList.toggle('on', x === b));
+  if (b.dataset.fb === 'like') {
+    $('#fbReasons').classList.remove('on');
+    const ok = await postFeedback({ like:true });
+    if (ok) { $('#fbThanks').textContent = '收到了，谢谢你。图可以存了。'; $('#fbThanks').classList.add('on'); }
+  } else {
+    $('#fbReasons').classList.add('on');
+  }
+});
+
+$('#fbChips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  const r = c.dataset.r;
+  if (fbPick.has(r)) { fbPick.delete(r); c.classList.remove('on'); }
+  else { fbPick.add(r); c.classList.add('on'); }
+});
+
+$('#fbSend').addEventListener('click', async () => {
+  if (!fbPick.size) return alert('勾一项哪里不像，我就知道往哪儿改。');
+  const ok = await postFeedback({ like:false, reasons:[...fbPick] });
+  if (ok) {
+    $('#fbReasons').classList.remove('on');
+    $('#fbThanks').textContent = '收到了。这个问题我会先改，再重出一张，不扣次数。';
+    $('#fbThanks').classList.add('on');
+  }
+});
+
+/* ---------- 我的试甲记录 ---------- */
+$('#mineBtn').addEventListener('click', () => { renderSheet(); $('#sheet').classList.add('on'); });
+$('#sheetClose').addEventListener('click', () => $('#sheet').classList.remove('on'));
+$('#sheetList').addEventListener('click', e => {
+  const a = e.target.closest('a[data-id]'); if (!a) return;
+  e.preventDefault();
+  $('#sheet').classList.remove('on');
+  openPanel(a.dataset.id);
+});
+
+/* ---------- 内置浏览器提示 ---------- */
+(function (){
+  const ua = navigator.userAgent || '';
+  if (/MicroMessenger|aweme|XHS|BytedanceWebview|ByteLocale/i.test(ua)) $('#wvbar').hidden = false;
+  $('#wvClose').addEventListener('click', () => $('#wvbar').hidden = true);
+})();
+
+/* ---------- 恢复 ---------- */
+/* ---------- 分享图（本机合成，不上传） ---------- */
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+function drawCover(ctx, img, x, y, w, h){
+  const s = Math.max(w / img.width, h / img.height);
+  const sw = Math.round(w / s), sh = Math.round(h / s);
+  ctx.drawImage(img, Math.round((img.width - sw) / 2), Math.round((img.height - sh) / 2), sw, sh, x, y, w, h);
+}
+async function makeShare(){
+  const r0 = state.results && state.results[0];
+  if (!r0) return showToast('这张还没出来，等图到了再存');
+  const styleSrc = state.styleImg || (state.styleId ? ('assets/styles/style-' + String(state.styleId).padStart(2, '0') + '.jpg') : null);
+  let a = null, b = null;
+  try { b = await loadImg(r0.url); } catch(e) { return showToast('效果图没读出来，刷新一下再试'); }
+  if (styleSrc) { try { a = await loadImg(styleSrc); } catch(e) { a = null; } }
+
+  const W = 1080, H = 1440, pad = 56, gap = 26;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#F7F3EE'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#E3D9CC'; ctx.lineWidth = 2; ctx.strokeRect(18, 18, W - 36, H - 36);
+
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#1A1614'; ctx.font = '700 54px "Noto Serif SC","Songti SC",serif';
+  ctx.fillText('上手 · 试甲预演', pad, 62);
+  ctx.fillStyle = '#7A6E62'; ctx.font = '400 26px "Noto Sans SC",sans-serif';
+  ctx.fillText('先上手，再掏钱', pad + 2, 132);
+
+  const iw = (W - pad * 2 - gap) / 2, ih = 720, iy = 226;
+  ctx.fillStyle = '#4A423B'; ctx.font = '400 24px "Noto Sans SC",sans-serif';
+  if (a) ctx.fillText('她收藏的款', pad, iy - 40);
+  ctx.fillText('你的手 · 上手效果', a ? pad + iw + gap : pad, iy - 40);
+  if (a) {
+    drawCover(ctx, a, pad, iy, iw, ih);
+    ctx.strokeStyle = '#E3D9CC'; ctx.lineWidth = 1; ctx.strokeRect(pad, iy, iw, ih);
+    drawCover(ctx, b, pad + iw + gap, iy, iw, ih);
+    ctx.strokeRect(pad + iw + gap, iy, iw, ih);
+  } else {
+    drawCover(ctx, b, pad, iy, W - pad * 2, ih);
+    ctx.strokeStyle = '#E3D9CC'; ctx.lineWidth = 1; ctx.strokeRect(pad, iy, W - pad * 2, ih);
+  }
+
+  ctx.fillStyle = '#1A1614'; ctx.font = '600 34px "Noto Serif SC",serif';
+  ctx.fillText(state.styleName || '这一款', pad, iy + ih + 34);
+  ctx.fillStyle = '#4A423B'; ctx.font = '400 24px "Noto Sans SC",sans-serif';
+  ctx.fillText('同一个款，做在谁的手上差多少——先看清楚再决定。', pad, iy + ih + 86);
+
+  ctx.strokeStyle = '#E3D9CC'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad, H - 132); ctx.lineTo(W - pad, H - 132); ctx.stroke();
+
+  /* 空白地带放自己的码：这张图被转发出去，别人能直接扫进来 */
+  let qimg = null;
+  try {
+    const q = qrcode(0, 'M'); q.addData(invLink()); q.make();
+    qimg = await loadImg(q.createDataURL(6, 2));
+  } catch(e) { qimg = null; }
+  if (qimg) {
+    const qs = 150, qx = W - pad - qs, qy = H - 300;
+    ctx.fillStyle = '#fff'; ctx.fillRect(qx - 14, qy - 14, qs + 28, qs + 28);
+    ctx.strokeStyle = '#E3D9CC'; ctx.strokeRect(qx - 14, qy - 14, qs + 28, qs + 28);
+    ctx.drawImage(qimg, qx, qy, qs, qs);
+    ctx.fillStyle = '#1A1614'; ctx.font = '600 30px "Noto Serif SC",serif';
+    ctx.fillText('扫一下，自己也试一张', pad, qy + 46);
+    ctx.fillStyle = '#7A6E62'; ctx.font = '400 22px "Noto Sans SC",sans-serif';
+    ctx.fillText('第一张免费 · 1 分钟出图', pad, qy + 92);
+  }
+
+  ctx.fillStyle = '#7A6E62'; ctx.font = '400 22px "Noto Sans SC",sans-serif';
+  ctx.fillText('上传一张手照，1 分钟看到自己做上的样子', pad, H - 106);
+  ctx.fillStyle = '#7B2D3B'; ctx.font = '700 30px "Noto Serif SC",serif';
+  ctx.fillText('上手', pad, H - 60);
+  ctx.fillStyle = '#7A6E62'; ctx.font = '400 18px "Noto Sans SC",sans-serif';
+  ctx.textAlign = 'right'; ctx.fillText('AI 生成，仅供决策参考', W - pad, H - 56); ctx.textAlign = 'left';
+
+  const link = document.createElement('a');
+  link.download = '上手-试甲-' + (state.styleName || '效果') + '.jpg';
+  link.href = c.toDataURL('image/jpeg', 0.92);
+  link.click();
+  showToast('分享图已生成，在下载/相册里');
+}
+$('#shareBtn').addEventListener('click', makeShare);
+
+/* ---------- 桌面扫码到手机 ---------- */
+$('#qrBtn').addEventListener('click', () => {
+  const url = invLink();
+  let svg = '';
+  try {
+    const q = qrcode(0, 'M'); q.addData(url); q.make();
+    svg = q.createSvgTag({ cellSize: 5, margin: 3, scalable: true });
+  } catch(e) { svg = ''; }
+  $('#qrBox').innerHTML = svg;
+  $('#qrUrl').textContent = url;
+  $('#qrSheet').classList.add('on');
+});
+$('#qrClose').addEventListener('click', () => $('#qrSheet').classList.remove('on'));
+
+/* ---------- 邀请：复制 / 落地 / 奖励 ---------- */
+$('#invCopy').addEventListener('click', () => {
+  const link = invLink();
+  const done = () => showToast('邀请链接已复制，发给她就行');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, () => showToast('没复制上，长按这段自己存：' + link));
+  else showToast('链接是：' + link);
+});
+
+(function catchInv(){
+  const m = /[?&]inv=([A-Za-z0-9]{4,8})/i.exec(location.search);
+  if (!m) return;
+  const code = m[1].toUpperCase();
+  if (code === myCode()) return;
+  LS.set('ss_pending_inv', code);
+  const h = $('#invHint'); h.style.display = 'block';
+  h.textContent = '朋友邀请你来的：你试完第一张，你和他各得 1 次免费。';
+})();
+
+/* ---------- 恢复 ---------- */
+(function restore(){
+  const savedHand = LS.get('ss_hand', null);
+  if (savedHand) { state.hand = savedHand; state.handFromStore = true; }
+  paintHand();
+  paintFree();
+  renderSheet();
+  $('#invCode').textContent = myCode();
+  syncInvite();
+  const m = /o=([A-Za-z0-9\-]+)/.exec(location.hash);
+  if (m) openPanel(m[1]);
+})();
+
+renderThumbs();
+</script>
+</body>
+</html>
